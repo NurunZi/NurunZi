@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f4ef" />
+  <title>네컷사진 스튜디오</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#"><span class="brand-mark">4</span><span>four<span class="brand-dot">.</span>cut</span></a><span class="top-note">YOUR MOMENT, YOUR FRAME</span></header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow"><span></span> MAKE YOUR OWN PHOTO STRIP</div>
+      <h1>오늘의 순간을<br><em>네 컷으로</em> 남겨요.</h1>
+      <p>사진 네 장을 고르거나 지금 바로 촬영해 보세요.<br>마음에 드는 프레임을 입히면 완성!</p>
+    </section>
+
+    <div class="studio-layout">
+      <section class="editor panel">
+        <div class="section-heading"><div><span class="step">01</span><h2>사진 준비하기</h2></div><span class="tiny-label">4 PHOTOS</span></div>
+        <div class="mode-switch" role="tablist" aria-label="사진 준비 방식">
+          <button class="mode-btn active" data-mode="upload" role="tab" aria-selected="true"><span>▧</span> 사진 업로드</button>
+          <button class="mode-btn" data-mode="camera" role="tab" aria-selected="false"><span>◎</span> 직접 촬영</button>
+        </div>
+        <div id="upload-pane" class="mode-pane">
+          <label class="dropzone" id="dropzone" for="photo-input">
+            <span class="upload-icon">↑</span><strong>사진 네 장을 선택해 주세요</strong><span>여기를 누르거나 사진을 끌어다 놓으세요</span><small>JPG, PNG · 최대 4장</small>
+          </label>
+          <input id="photo-input" type="file" accept="image/*" multiple hidden />
+        </div>
+        <div id="camera-pane" class="mode-pane hidden">
+          <div class="camera-box"><video id="camera-video" autoplay playsinline muted></video><div id="camera-placeholder"><span>◎</span><b>카메라를 켜고 네 컷을 촬영해 보세요</b><small>브라우저의 카메라 접근을 허용해 주세요</small></div><div class="camera-count" id="camera-count">0 / 4</div></div>
+          <div class="camera-controls"><button id="start-camera" class="secondary-btn">카메라 켜기</button><button id="capture-btn" class="capture-btn" disabled aria-label="사진 촬영"><span></span></button><button id="stop-camera" class="icon-btn" title="카메라 끄기">Ⅱ</button></div>
+          <p class="camera-hint">셔터를 눌러 순서대로 네 장을 찍어 주세요.</p>
+        </div>
+
+        <div class="photo-grid" id="photo-grid" aria-label="선택한 사진"></div>
+        <div class="section-heading frame-heading"><div><span class="step">02</span><h2>프레임 고르기</h2></div><button id="shuffle-btn" class="text-btn">랜덤 선택 ↗</button></div>
+        <div class="frame-options" id="frame-options">
+          <button class="frame-option selected" data-frame="classic"><span class="mini-frame classic-mini"><i></i><i></i><i></i><i></i><b>four.cut</b></span><span>클래식</span></button>
+          <button class="frame-option" data-frame="pink"><span class="mini-frame pink-mini"><i></i><i></i><i></i><i></i><b>♡ with love ♡</b></span><span>러블리</span></button>
+          <button class="frame-option" data-frame="film"><span class="mini-frame film-mini"><i></i><i></i><i></i><i></i><b>MEMORIES</b></span><span>필름</span></button>
+          <button class="frame-option" data-frame="mint"><span class="mini-frame mint-mini"><i></i><i></i><i></i><i></i><b>good day!</b></span><span>민트</span></button>
+        </div>
+        <div class="caption-row"><label for="caption">프레임에 문구 넣기 <span>선택</span></label><input id="caption" type="text" maxlength="24" placeholder="예: 오늘도 우리답게 ♡" /></div>
+        <div class="section-heading sticker-heading"><div><span class="step">03</span><h2>스티커 붙이기</h2></div><button id="clear-stickers" class="text-btn">모두 지우기</button></div>
+        <div class="sticker-picker" id="sticker-picker" aria-label="스티커 선택"></div>
+        <p class="editor-hint">스티커를 누르면 미리보기에 추가돼요. 미리보기에서 끌어 위치를 옮길 수 있어요.</p>
+        <div class="color-row"><label for="frame-color">프레임 색 직접 고르기</label><div class="color-control"><input id="frame-color" type="color" value="#ffffff" aria-label="프레임 색상 선택"><span id="color-value">#FFFFFF</span><button id="reset-color" class="text-btn">선택 프레임 색으로</button></div></div>
+      </section>
+
+      <aside class="preview-panel">
+        <div class="preview-head"><div><span class="tiny-label">LIVE PREVIEW</span><h2>완성 미리보기</h2></div><span class="live-dot"></span></div>
+        <div class="preview-stage"><div id="photo-strip" class="photo-strip classic"><div class="strip-photo empty-photo"><span>01</span><b>사진을<br>추가해 주세요</b></div><div class="strip-photo empty-photo"><span>02</span></div><div class="strip-photo empty-photo"><span>03</span></div><div class="strip-photo empty-photo"><span>04</span></div><div class="strip-caption">four.cut</div><div id="sticker-layer" class="sticker-layer"></div></div></div>
+        <div class="preview-meta"><span>세로형 · 2:6 비율</span><span id="photo-status">사진 0 / 4</span></div>
+        <button id="download-btn" class="download-btn" disabled><span>완성 이미지 저장</span><b>↓</b></button>
+        <p class="download-note">사진 네 장을 채우면 저장할 수 있어요.</p>
+      </aside>
+    </div>
+    <footer><span>four.cut studio</span><span>MADE WITH YOUR LITTLE MOMENTS ✳</span></footer>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="crop-menu hidden" id="crop-menu" role="dialog" aria-label="사진 구도 조정"></div>
+  <script src="app.js"></script>
+</body>
+</html>
