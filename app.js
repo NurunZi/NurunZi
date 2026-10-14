@@ -11,6 +11,7 @@ const video = document.querySelector('#camera-video');
 const toast = document.querySelector('#toast');
 const cropMenu = document.querySelector('#crop-menu');
 let editingPhotoIndex = -1;
+let longPressTimer = null;
 const frames = {
   classic: { bg: '#ffffff', photo: '#f0ede8', ink: '#38342e', top: 'four.cut', bottom: 'four.cut', pad: 10 },
   pink: { bg: '#f4dedd', photo: '#edd1d0', ink: '#995f65', top: '♡ with love ♡', bottom: '♡ with love ♡', pad: 10 },
@@ -45,14 +46,27 @@ function update() {
         if (e.button !== 0) return;
         e.preventDefault(); framePhoto.setPointerCapture(e.pointerId);
         const bounds = framePhoto.getBoundingClientRect(), startX = e.clientX, startY = e.clientY, initialX = photo.x ?? 50, initialY = photo.y ?? 50;
-        let moved = false;
+        let moved = false, openedEditor = false;
+        clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(() => {
+          openedEditor = true;
+          openFullPhotoEditor(index);
+        }, 520);
         const move = ev => {
-          if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 12) moved = true;
+          if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 12) {
+            moved = true;
+            if (!openedEditor) clearTimeout(longPressTimer);
+          }
+          if (openedEditor) return;
           photo.x = Math.max(0, Math.min(100, initialX - (ev.clientX - startX) / bounds.width * 100));
           photo.y = Math.max(0, Math.min(100, initialY - (ev.clientY - startY) / bounds.height * 100));
           img.style.objectPosition = `${photo.x}% ${photo.y}%`; img.style.transformOrigin = `${photo.x}% ${photo.y}%`;
         };
-        const end = ev => { framePhoto.removeEventListener('pointermove', move); framePhoto.removeEventListener('pointerup', end); framePhoto.removeEventListener('pointercancel', end); if (!moved && ev.type === 'pointerup') openCropMenu(index, ev.clientX, ev.clientY); };
+        const end = ev => {
+          clearTimeout(longPressTimer);
+          framePhoto.removeEventListener('pointermove', move); framePhoto.removeEventListener('pointerup', end); framePhoto.removeEventListener('pointercancel', end);
+          if (!moved && !openedEditor && ev.type === 'pointerup') openCropMenu(index, ev.clientX, ev.clientY);
+        };
         framePhoto.addEventListener('pointermove', move); framePhoto.addEventListener('pointerup', end); framePhoto.addEventListener('pointercancel', end);
       });
     }
@@ -77,6 +91,49 @@ function update() {
   const ready = photos.every(Boolean); document.querySelector('#download-btn').disabled = !ready; document.querySelector('#copy-btn').disabled = !ready;
   document.querySelector('.download-note').textContent = ready ? '저장하거나 복사해 다른 곳에 붙여넣을 수 있어요.' : '사진 네 장을 채우면 저장하거나 복사할 수 있어요.';
   strip.style.backgroundColor = customColor || frames[currentFrame].bg;
+}
+function openFullPhotoEditor(index) {
+  const photo = photos[index];
+  const overlay = document.createElement('div');
+  overlay.className = 'full-photo-editor';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', `${index + 1}번 사진 위치 조정`);
+  overlay.innerHTML = `<div class="full-photo-card"><div class="full-photo-head"><strong>사진 전체를 보며 위치 조정</strong><button type="button" class="full-photo-close" aria-label="닫기">×</button></div><p>사진을 손가락으로 움직여 프레임에 들어갈 부분을 맞춰 주세요.</p><div class="full-photo-canvas"><img src="${photo.src}" alt="전체 사진 위치 조정"><div class="full-photo-crop" aria-hidden="true"></div></div><button type="button" class="full-photo-done">적용하기</button></div>`;
+  document.body.append(overlay);
+  const canvas = overlay.querySelector('.full-photo-canvas');
+  const crop = overlay.querySelector('.full-photo-crop');
+  const image = overlay.querySelector('img');
+  const frameBounds = strip.querySelector(`[data-photo-index="${index}"]`).getBoundingClientRect();
+  const targetRatio = frameBounds.width / frameBounds.height;
+  const placeCrop = () => {
+    const canvasRect = canvas.getBoundingClientRect(), imageRect = image.getBoundingClientRect();
+    const w = imageRect.width, h = imageRect.height;
+    const cropW = Math.min(w, h * targetRatio) / (photo.zoom || 1), cropH = cropW / targetRatio;
+    crop.style.width = `${cropW}px`; crop.style.height = `${cropH}px`;
+    const maxX = Math.max(0, w - cropW), maxY = Math.max(0, h - cropH);
+    const baseLeft = imageRect.left - canvasRect.left, baseTop = imageRect.top - canvasRect.top;
+    const left = baseLeft + maxX * (photo.x ?? 50) / 100, top = baseTop + maxY * (photo.y ?? 50) / 100;
+    crop.style.left = `${left}px`; crop.style.top = `${top}px`;
+    crop.dataset.baseLeft = baseLeft; crop.dataset.baseTop = baseTop; crop.dataset.maxX = maxX; crop.dataset.maxY = maxY;
+  };
+  const ready = () => { if (image.complete) placeCrop(); else image.addEventListener('load', placeCrop, { once: true }); };
+  ready();
+  const moveCrop = ev => {
+    const rect = canvas.getBoundingClientRect(), baseLeft = Number(crop.dataset.baseLeft), baseTop = Number(crop.dataset.baseTop), maxX = Number(crop.dataset.maxX), maxY = Number(crop.dataset.maxY);
+    const left = Math.max(0, Math.min(maxX, ev.clientX - rect.left - baseLeft - crop.offsetWidth / 2));
+    const top = Math.max(0, Math.min(maxY, ev.clientY - rect.top - baseTop - crop.offsetHeight / 2));
+    crop.style.left = `${baseLeft + left}px`; crop.style.top = `${baseTop + top}px`;
+    photo.x = maxX ? left / maxX * 100 : 50; photo.y = maxY ? top / maxY * 100 : 50;
+  };
+  crop.addEventListener('pointerdown', ev => { ev.preventDefault(); crop.setPointerCapture(ev.pointerId); moveCrop(ev); crop.addEventListener('pointermove', moveCrop); });
+  const stopMove = () => crop.removeEventListener('pointermove', moveCrop);
+  crop.addEventListener('pointerup', stopMove); crop.addEventListener('pointercancel', stopMove);
+  const finish = () => { overlay.remove(); update(); };
+  overlay.querySelector('.full-photo-close').addEventListener('click', finish);
+  overlay.querySelector('.full-photo-done').addEventListener('click', finish);
+  overlay.addEventListener('click', ev => { if (ev.target === overlay) finish(); });
+  document.addEventListener('keydown', function onEscape(ev) { if (ev.key === 'Escape') { finish(); document.removeEventListener('keydown', onEscape); } });
 }
 function openCropMenu(index, clientX, clientY) {
   editingPhotoIndex = index;
