@@ -24,17 +24,31 @@ const frames = {
 };
 
 function showToast(message) { toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2400); }
+function movePhoto(from, to) {
+  if (from < 0 || from >= photos.length || to < 0 || to >= photos.length || from === to) return;
+  [photos[from], photos[to]] = [photos[to], photos[from]];
+  update();
+}
 function update() {
   grid.innerHTML = '';
   strip.innerHTML = '';
   const frame = frames[currentFrame];
   strip.className = `photo-strip ${currentFrame}${frame.layout === 'grid' ? ' layout-grid' : ''}`;
   photos.forEach((photo, index) => {
-    const slot = document.createElement('div'); slot.className = 'photo-slot';
+    const slot = document.createElement('div'); slot.className = 'photo-slot'; slot.dataset.slotIndex = index; slot.draggable = Boolean(photo);
+    slot.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(index)); e.dataTransfer.effectAllowed = 'move'; slot.classList.add('dragging'); });
+    slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+    slot.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; slot.classList.add('drop-target'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drop-target'));
+    slot.addEventListener('drop', e => { e.preventDefault(); slot.classList.remove('drop-target'); const from = Number(e.dataTransfer.getData('text/plain')); if (Number.isInteger(from)) movePhoto(from, index); });
     const num = document.createElement('span'); num.className = 'slot-number'; num.textContent = `0${index + 1}`; slot.append(num);
     if (photo) {
       const thumb = document.createElement('img'); thumb.src = photo.src; thumb.alt = `선택한 사진 ${index + 1}`; slot.append(thumb);
       const remove = document.createElement('button'); remove.className = 'remove-photo'; remove.textContent = '×'; remove.setAttribute('aria-label', `${index + 1}번 사진 삭제`); remove.onclick = () => { photos[index] = null; update(); }; slot.append(remove);
+      const order = document.createElement('div'); order.className = 'photo-order-actions';
+      const earlier = document.createElement('button'); earlier.type = 'button'; earlier.className = 'photo-order-btn'; earlier.textContent = '←'; earlier.setAttribute('aria-label', `${index + 1}번 사진을 앞으로 이동`); earlier.title = '앞으로 이동'; earlier.disabled = index === 0; earlier.onclick = () => movePhoto(index, index - 1);
+      const later = document.createElement('button'); later.type = 'button'; later.className = 'photo-order-btn'; later.textContent = '→'; later.setAttribute('aria-label', `${index + 1}번 사진을 뒤로 이동`); later.title = '뒤로 이동'; later.disabled = index === photos.length - 1; later.onclick = () => movePhoto(index, index + 1);
+      order.append(earlier, later); slot.append(order);
     } else { const plus = document.createElement('span'); plus.className = 'slot-plus'; plus.textContent = '+'; slot.append(plus); }
     grid.append(slot);
     const framePhoto = document.createElement('div'); framePhoto.className = `strip-photo${photo ? '' : ' empty-photo'}`; framePhoto.dataset.photoIndex = index;

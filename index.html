@@ -28,7 +28,7 @@
         </div>
         <div id="upload-pane" class="mode-pane">
           <label class="dropzone" id="dropzone" for="photo-input">
-            <span class="upload-icon">↑</span><strong>사진 네 장을 선택해 주세요</strong><span>여기를 누르거나 사진을 끌어다 놓으세요</span><small>JPG, PNG · 최대 4장</small>
+            <span class="upload-icon">↑</span><strong>사진 네 장을 선택해 주세요</strong><span>한 번에 네 장까지 선택하거나 사진을 끌어다 놓으세요</span><small>JPG, PNG · 최대 4장</small>
           </label>
           <input id="photo-input" type="file" accept="image/*" multiple hidden />
         </div>
@@ -39,6 +39,7 @@
         </div>
 
         <div class="photo-grid" id="photo-grid" aria-label="선택한 사진"></div>
+        <p class="photo-order-hint">사진을 드래그하거나 화살표를 눌러 순서를 바꿀 수 있어요.</p>
         <div class="section-heading frame-heading"><div><span class="step">02</span><h2>프레임 고르기</h2></div><button id="shuffle-btn" class="text-btn">랜덤 선택 ↗</button></div>
         <div class="frame-options" id="frame-options">
           <button class="frame-option selected" data-frame="classic"><span class="mini-frame classic-mini"><i></i><i></i><i></i><i></i><b>four.cut</b></span><span>클래식</span></button>
