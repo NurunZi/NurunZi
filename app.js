@@ -23,6 +23,12 @@ const frames = {
   flower: { bg: '#91c5df', photo: '#fffdfb', ink: '#fffdfb', top: 'little flower', bottom: 'little flower', pad: 12, decoration: [['🌼', 4, 24, 18], ['✿', 87, 50, 19], ['🧸', 72, 84, 32], ['✦', 7, 8, 14]] }
 };
 
+function canShareImageFile() {
+  try {
+    const file = new File([new Blob()], 'four-cut.png', { type: 'image/png' });
+    return Boolean(navigator.share && navigator.canShare?.({ files: [file] }));
+  } catch { return false; }
+}
 function showToast(message) { toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2400); }
 function movePhoto(from, to) {
   if (from < 0 || from >= photos.length || to < 0 || to >= photos.length || from === to) return;
@@ -103,7 +109,8 @@ function update() {
   document.querySelector('#photo-status').textContent = `사진 ${photos.filter(Boolean).length} / 4`;
   document.querySelector('#camera-count').textContent = `${photos.filter(Boolean).length} / 4`;
   const ready = photos.every(Boolean); document.querySelector('#download-btn').disabled = !ready; document.querySelector('#copy-btn').disabled = !ready;
-  document.querySelector('.download-note').textContent = ready ? '저장하거나 복사해 다른 곳에 붙여넣을 수 있어요.' : '사진 네 장을 채우면 저장하거나 복사할 수 있어요.';
+  document.querySelector('#download-btn span').textContent = canShareImageFile() ? '갤러리에 저장' : '이미지 파일로 저장';
+  document.querySelector('.download-note').textContent = ready ? (canShareImageFile() ? '저장 버튼을 누르고 공유 메뉴에서 사진 앱/갤러리를 선택하세요.' : '이미지 파일을 저장한 뒤 사진 앱/갤러리에서 확인할 수 있어요.') : '사진 네 장을 채우면 저장하거나 복사할 수 있어요.';
   strip.style.backgroundColor = customColor || frames[currentFrame].bg;
 }
 function openFullPhotoEditor(index) {
@@ -255,7 +262,16 @@ async function runOutputAction(action) {
   buttons.forEach(button => button.disabled = true);
   try {
     const blob = await createStripBlob();
-    if (action === 'copy' && navigator.clipboard?.write && window.ClipboardItem) {
+    if (action === 'gallery' && canShareImageFile()) {
+      const file = new File([blob], 'four-cut.png', { type: 'image/png' });
+      try {
+        await navigator.share({ files: [file], title: '인생네컷 사진', text: '완성한 인생네컷 사진이에요.' });
+        showToast('공유 메뉴에서 사진 앱이나 갤러리에 저장할 수 있어요.');
+      } catch (error) {
+        if (error.name === 'AbortError') showToast('사진 저장을 취소했어요.');
+        else { console.warn('Image sharing unavailable; downloading instead:', error); downloadBlob(blob); showToast('공유를 사용할 수 없어 이미지 파일로 저장했어요.'); }
+      }
+    } else if (action === 'copy' && navigator.clipboard?.write && window.ClipboardItem) {
       try {
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
         showToast('이미지를 복사했어요. 원하는 곳에 붙여넣으세요.');
@@ -273,6 +289,6 @@ async function runOutputAction(action) {
     showToast('이미지를 만들지 못했어요. 사진을 다시 불러온 뒤 시도해 주세요.');
   } finally { buttons.forEach(button => button.disabled = !photos.every(Boolean)); }
 }
-document.querySelector('#download-btn').addEventListener('click', () => runOutputAction('download'));
+document.querySelector('#download-btn').addEventListener('click', () => runOutputAction('gallery'));
 document.querySelector('#copy-btn').addEventListener('click', () => runOutputAction('copy'));
 update();
